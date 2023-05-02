@@ -77,7 +77,7 @@ func NetUpdateThread() {
 		//time.Sleep(time.Second * 1)
 
 		// Debug ram
-		debugRam()
+		//debugRam()
 		// Debug ram
 
 		time.Sleep(time.Millisecond * 500)

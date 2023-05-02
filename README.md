@@ -49,7 +49,7 @@ Another Looking-glass Server 的Golang后端实现，[原项目地址](https://g
 
 完整配置文件
 
-```json
+```yml
 listenaddr: 0.0.0.0
 port: 4000
 testfiles: [1048576, 10485760, 104857600]
