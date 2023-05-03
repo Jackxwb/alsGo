@@ -39,6 +39,14 @@ type NetWorkInfo struct {
 	Send string `json:"send"`
 }
 
+//func (df *DataFrame) cleanData() {
+//	df.Time = 0
+//	for i := 0; i < len(df.Data); i++ {
+//		df.Data[i] = nil
+//	}
+//	df.Data = nil
+//}
+
 // 内部网卡当前数据
 var netWorkData = make(map[string]*NetWorkInfo)
 
@@ -72,12 +80,13 @@ func NetUpdateThread() {
 	NetUpdateThreadIsRun = true
 	for true {
 		//fmt.Println("---update---")
-		newWork()
+		//newWork()
+		newWorkV2()
 		//fmt.Println("---update ed---")
 		//time.Sleep(time.Second * 1)
 
 		// Debug ram
-		//debugRam()
+		debugRam()
 		// Debug ram
 
 		time.Sleep(time.Millisecond * 500)
@@ -102,7 +111,7 @@ func debugRam() {
 func newWork() {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("Recovered from panic:", err)
+			log.Println("[newWork]Recovered from panic:", err)
 			// 处理 panic 错误
 		}
 		lock.Unlock()
@@ -139,6 +148,7 @@ func newWork() {
 	}
 
 	if len(netDataFrame) > 10 {
+		//netDataFrame[0].cleanData()
 		netDataFrame[0] = nil
 		netDataFrame = netDataFrame[1 : len(netDataFrame)-1]
 	}
@@ -146,6 +156,55 @@ func newWork() {
 
 	//触发发送
 	UpdateNetMessage(frame)
+}
+
+func newWorkV2() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("[newWorkV2]Recovered from panic:", err)
+			// 处理 panic 错误
+		}
+		lock.Unlock()
+	}()
+	lock.Lock()
+
+	last := len(netDataFrame)
+	if last > 10 {
+		for i := 1; i < last-1; i++ {
+			netDataFrame[i-1] = netDataFrame[i]
+		}
+	} else {
+		netDataFrame = append(netDataFrame, &DataFrame{Time: time.Now().Unix()})
+		last++
+	}
+
+	networkIOCount, _ := goNet.IOCounters(true)
+	for _, v := range networkIOCount {
+		//跳过无返回的网卡
+		if v.BytesRecv == 0 {
+			continue
+		}
+
+		//用户自己的配置
+		if !canShow(v.Name) {
+			continue
+		}
+
+		workInfo := netWorkData[v.Name]
+		if workInfo == nil {
+			workInfo = &NetWorkInfo{
+				Name: v.Name,
+			}
+		}
+
+		workInfo.Recv = strconv.FormatUint(v.BytesRecv, 10)
+		workInfo.Send = strconv.FormatUint(v.BytesSent, 10)
+
+		netWorkData[v.Name] = workInfo
+
+		//frame.Data = append(frame.Data, workInfo)
+		netDataFrame[last-1].Data = append(netDataFrame[last-1].Data, workInfo)
+	}
 }
 
 func canShow(name string) bool {

@@ -45,4 +45,10 @@ func InitCornTask() {
 			}
 		}
 	})
+
+	//10秒释放一次测速缓存
+	c.AddFunc("*/10 * * * * ? ", func() {
+		//清理测速缓存
+		app.CleanMemoryBuffData()
+	})
 }

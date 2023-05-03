@@ -6,7 +6,32 @@ import (
 	"io"
 	"runtime"
 	"strconv"
+	"sync"
 )
+
+var memoryBuffData []byte
+var memoryBuffDataLock sync.RWMutex
+
+// CleanMemoryBuffData 清理测速缓存
+func CleanMemoryBuffData() {
+	defer memoryBuffDataLock.Unlock()
+	memoryBuffDataLock.Lock()
+
+	for i := 0; i < len(memoryBuffData); i++ {
+		memoryBuffData[i] = 0
+	}
+	memoryBuffData = nil
+}
+
+// 创建测速缓存
+func checkMemoryBuffData(ckSize int64) {
+	defer memoryBuffDataLock.Unlock()
+	memoryBuffDataLock.Lock()
+
+	if memoryBuffData == nil {
+		memoryBuffData = RequestMemory(int64(float64(ckSize << 20)))
+	}
+}
 
 func JsStDownload(c *gin.Context) {
 	defer func() {
@@ -22,7 +47,12 @@ func JsStDownload(c *gin.Context) {
 	}
 	ckSize += util.GetRandomInt()
 	//c.Writer.Write(RequestMemory(int64(float64(ckSize) * 1024 * 1024 * GetRandomFloat())))
-	c.Writer.Write(RequestMemory(int64(float64(ckSize << 20))))
+	//c.Writer.Write(RequestMemory(int64(float64(ckSize << 20))))
+
+	//缓存不存在就创建，存在就跳过使用缓存
+	checkMemoryBuffData(ckSize)
+
+	c.Writer.Write(memoryBuffData)
 }
 func RequestMemory(size int64) []byte {
 	bytes := make([]byte, size)
