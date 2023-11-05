@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	goNet "github.com/shirou/gopsutil/net"
 	"golang/Config"
 	"golang/util"
@@ -95,7 +96,16 @@ func NetUpdateThread() {
 
 var ramMax, ramMin uint64
 
+var lastDebugTime int64
+
 func debugRam() {
+	//避免高频写出硬盘
+	now := time.Now().Unix()
+	if now-lastDebugTime < 10 {
+		return
+	}
+	lastDebugTime = now
+
 	ram := runtime.MemStats{}
 	runtime.ReadMemStats(&ram)
 	allocNow := ram.Alloc
@@ -105,9 +115,34 @@ func debugRam() {
 	if ramMin > allocNow || ramMin == 0 {
 		ramMin = allocNow
 	}
-	log.Println("内存Alloc:", util.FomatSize(float64(allocNow)), ", 最大:", util.FomatSize(float64(ramMax)), "最小:", util.FomatSize(float64(ramMin)), "在线:", GetOnlineNum())
+	//log.Println("内存Alloc:", util.FomatSize(float64(allocNow)), ", 最大:", util.FomatSize(float64(ramMax)), "最小:", util.FomatSize(float64(ramMin)), "在线:", GetOnlineNum())
+	//data := "内存Alloc:" + util.FomatSize(float64(allocNow)) + ", 最大:" + util.FomatSize(float64(ramMax)) + "最小:" + util.FomatSize(float64(ramMin)) + "在线:" + GetOnlineNum()
+	data := fmt.Sprintf("%s 内存Alloc: %s , 最大: %s 最小: %s 在线: %d\r\n",
+		util.GetNowStr(),
+		util.FomatSize(float64(allocNow)),
+		util.FomatSize(float64(ramMax)),
+		util.FomatSize(float64(ramMin)),
+		GetOnlineNum(),
+	)
+
+	onlineUser := GetOnlineUser()
+	for i := 0; i < len(OnlineList); i++ {
+		data += fmt.Sprintf("->\t%d [%s](%s) [E:%d]%s\r\n",
+			i,
+			onlineUser[i].Addr,
+			onlineUser[i].Ips,
+			onlineUser[i].ErrNum,
+			onlineUser[i].LastErr,
+		)
+	}
+
+	err := util.SaveText([]byte(data), "./onlineInfo")
+	if err != nil {
+		log.Println("Debug异常", err)
+	}
 }
 
+// 统计流量
 func newWork() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -158,6 +193,7 @@ func newWork() {
 	UpdateNetMessage(frame)
 }
 
+// 统计流量
 func newWorkV2() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -202,9 +238,16 @@ func newWorkV2() {
 
 		netWorkData[v.Name] = workInfo
 
+		//log.Println("debug [network]", workInfo.Name, workInfo.Recv, workInfo.Send)
+
 		//frame.Data = append(frame.Data, workInfo)
 		netDataFrame[last-1].Data = append(netDataFrame[last-1].Data, workInfo)
 	}
+
+	frame := netDataFrame[last-1]
+
+	//触发发送
+	UpdateNetMessage(*frame)
 }
 
 func canShow(name string) bool {

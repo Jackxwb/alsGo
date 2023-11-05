@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -26,6 +27,12 @@ func ReadZxincIpAddrIpv6() (*IpInfo, error) {
 
 // readZxincIpAddr 在线获取地址
 func readZxincIpAddr(url string) (*IpInfo, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("Recovered from panic<在线获取IP失败>:", err)
+			// 处理 panic 错误
+		}
+	}()
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err

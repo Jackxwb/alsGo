@@ -57,7 +57,7 @@ func DefWebSocket(c *gin.Context) {
 	webSocketService.SendHistoricalTraffic(ws)
 
 	//添加到队列中
-	service.AddUser(ws)
+	service.AddUser(ws, ipS)
 
 	go service.WebSocketListen(ws)
 }

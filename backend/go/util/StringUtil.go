@@ -4,6 +4,8 @@ import (
 	bytes2 "bytes"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
+	"io/ioutil"
+	"os"
 	"regexp"
 
 	"io"
@@ -36,4 +38,35 @@ func RegexpFindString(temple, data string) bool {
 		return true
 	}
 	return false
+}
+
+func SaveText(data []byte, fileName string) error {
+	file, err := os.Open(fileName)
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			createFile, err := os.Create(fileName)
+			if err != nil {
+				return err
+			}
+
+			file = createFile
+		} else {
+			return err
+		}
+	}
+
+	// 设置文件权限为可读可写
+	err = file.Chmod(0666)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(fileName, data, 0644)
+	return err
 }

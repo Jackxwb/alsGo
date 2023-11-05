@@ -112,7 +112,7 @@ func initServerIp() {
 	}
 
 	ipv4, err := util.ReadZxincIpAddrIpv4()
-	if err != nil {
+	if err != nil || ipv4 == nil {
 		log.Println("获取IPv4错误 -", err)
 		//获取失败的情况下获取本地地址
 		getLocalIp()
@@ -121,7 +121,7 @@ func initServerIp() {
 		Config.Config.BaseInfo.Location = ipv4.Local + " " + ipv4.Country
 	}
 	ipv6, err := util.ReadZxincIpAddrIpv6()
-	if err != nil {
+	if err != nil || ipv6 == nil {
 		log.Println("获取IPv6错误 -", err)
 	} else {
 		//webSocketService.BaseInfo.PublicIpv6 = ipv6.Ip

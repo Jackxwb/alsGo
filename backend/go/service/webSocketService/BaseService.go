@@ -28,7 +28,7 @@ func SendServerBase(conn *websocket.Conn, ips []string) {
 	err = conn.WriteMessage(websocket.TextMessage, []byte("1000|"+string(bytes)))
 
 	if err != nil {
-		log.Fatalf("发送消息失败 - SendServerBase - %s", err)
+		log.Printf("发送消息失败 - SendServerBase - %s", err)
 	}
 }
 
@@ -42,6 +42,6 @@ func SendHistoricalTraffic(conn *websocket.Conn) {
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte("101|"+string(bytes)))
 	if err != nil {
-		log.Fatalf("发送消息失败 - SendHistoricalTraffic - %s", err)
+		log.Printf("发送消息失败 - SendHistoricalTraffic - %s", err)
 	}
 }
